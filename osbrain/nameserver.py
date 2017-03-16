@@ -151,35 +151,51 @@ class NameServerProcess(multiprocessing.Process):
         """
         List agents registered in the name server.
         """
+        print('agents 1\n')
         proxy = NSProxy(self.addr)
+        print('agents 2\n')
         agents = proxy.list()
+        print('agents 3\n')
         proxy.release()
+        print('agents 4\n')
         return [name for name in agents if name != 'Pyro.NameServer']
 
     def shutdown_all(self):
         """
         Shutdown all agents registered in the name server.
         """
+        print('> NS shutdown_all called\n')
         for agent in self.agents():
-            with Proxy(agent, self.addr) as agent:
-                agent.after(0, 'shutdown')
+            print('Hello World 1\n')
+            proxy = Proxy(agent, self.addr)
+            print('Hello World 2\n')
+            proxy.unsafe.after(0, 'shutdown')
+            print('Hello World 3\n')
+            proxy.release()
+        print('> NS shutdown_all exit\n')
 
     def shutdown(self):
         """
         Shutdown the name server. All agents will be shutdown as well.
         """
+        print('> NS shutdown called\n')
         self.shutdown_all()
+        print('> NS creating proxy\n')
         nameserver = NSProxy(self.addr)
         # Wait for all agents to be shutdown (unregistered)
         while len(nameserver.list()) > 1:
+            print('> NS shutdown looping\n')
             time.sleep(0.1)
         self._shutdown_event.set()
         self.terminate()
         self.join()
+        print('> NS shutdown exit\n')
 
     def _sigint_handler(self, _signal, _frame):
+        print('> SIGINT NS enter\n')
         signal.signal(signal.SIGINT, signal.default_int_handler)
         self.shutdown()
+        print('> SIGINT NS exit\n')
 
 
 def random_nameserver_process(host='127.0.0.1', port_start=10000,

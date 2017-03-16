@@ -1940,6 +1940,7 @@ class AgentProcess(multiprocessing.Process):
         """
         Handle interruption signals.
         """
+        print('> SIGINT Agent enter')
         signal.signal(signal.SIGINT, signal.default_int_handler)
         self._sigint = True
         self.kill()
