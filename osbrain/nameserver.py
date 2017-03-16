@@ -7,6 +7,7 @@ import time
 import random
 import multiprocessing
 import cloudpickle
+import signal
 
 import Pyro4
 from Pyro4.naming import BroadcastServer
@@ -92,6 +93,9 @@ class NameServerProcess(multiprocessing.Process):
         """
         Begin execution of the name server process and start the main loop.
         """
+        # Capture SIGINT
+        signal.signal(signal.SIGINT, self._sigint_handler)
+
         self._base = cloudpickle.loads(self._base)
         try:
             Pyro4.naming.NameServer = self._base
@@ -172,6 +176,10 @@ class NameServerProcess(multiprocessing.Process):
         self._shutdown_event.set()
         self.terminate()
         self.join()
+
+    def _sigint_handler(self, _signal, _frame):
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        self.shutdown()
 
 
 def random_nameserver_process(host='127.0.0.1', port_start=10000,
