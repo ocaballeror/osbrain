@@ -7,6 +7,7 @@ import random
 import sys
 import time
 import signal
+from threading import Timer
 
 import cloudpickle
 import Pyro4
@@ -72,6 +73,9 @@ class NameServer(Pyro4.naming.NameServer):
         self._pyroDaemon.shutdown()
 
 
+Pyro4.naming.NameServer = NameServer
+
+
 class NameServerProcess(multiprocessing.Process):
     """
     Name server class. Instances of a name server are system processes which
@@ -113,9 +117,6 @@ class NameServerProcess(multiprocessing.Process):
         hostip = self._daemon.sock.getsockname()[0]
         # Start broadcast responder
         bcserver = BroadcastServer(internal_uri)
-        sys.stdout.write(
-            'Broadcast server running on %s\n' % bcserver.locationStr)
-        sys.stdout.flush()
         bcserver.runInThread()
         sys.stdout.write(
             'NS running on %s (%s)\n' % (self._daemon.locationStr, hostip))
@@ -151,51 +152,39 @@ class NameServerProcess(multiprocessing.Process):
         """
         List agents registered in the name server.
         """
-        print('agents 1\n')
         proxy = NSProxy(self.addr)
-        print('agents 2\n')
         agents = proxy.list()
-        print('agents 3\n')
         proxy.release()
-        print('agents 4\n')
         return [name for name in agents if name != 'Pyro.NameServer']
 
     def shutdown_all(self):
         """
         Shutdown all agents registered in the name server.
         """
-        print('> NS shutdown_all called\n')
         for agent in self.agents():
-            print('Hello World 1\n')
             proxy = Proxy(agent, self.addr)
-            print('Hello World 2\n')
             proxy.unsafe.after(0, 'shutdown')
-            print('Hello World 3\n')
             proxy.release()
-        print('> NS shutdown_all exit\n')
 
     def shutdown(self):
         """
         Shutdown the name server. All agents will be shutdown as well.
         """
-        print('> NS shutdown called\n')
         self.shutdown_all()
-        print('> NS creating proxy\n')
         nameserver = NSProxy(self.addr)
         # Wait for all agents to be shutdown (unregistered)
         while len(nameserver.list()) > 1:
-            print('> NS shutdown looping\n')
             time.sleep(0.1)
         self._shutdown_event.set()
-        self.terminate()
-        self.join()
-        print('> NS shutdown exit\n')
+        if self._popen:
+            self.terminate()
+            self.join()
+        else:
+            self.daemon.shutdown()
 
     def _sigint_handler(self, _signal, _frame):
-        print('> SIGINT NS enter\n')
         signal.signal(signal.SIGINT, signal.default_int_handler)
-        self.shutdown()
-        print('> SIGINT NS exit\n')
+        Timer(0, self.shutdown).start()
 
 
 def random_nameserver_process(host='127.0.0.1', port_start=10000,

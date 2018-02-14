@@ -8,7 +8,7 @@ import json
 import multiprocessing
 import os
 import pickle
-import signal
+import json
 import sys
 import time
 import types
@@ -17,6 +17,7 @@ from typing import Any
 from typing import Dict
 from typing import Union
 
+import signal
 import cloudpickle
 import dill
 import Pyro4
@@ -1935,15 +1936,6 @@ class AgentProcess(multiprocessing.Process):
         self._shutdown_event.set()
         if self._daemon:
             self._daemon.shutdown()
-
-    def _sigint_handler(self, signal, frame):
-        """
-        Handle interruption signals.
-        """
-        print('> SIGINT Agent enter')
-        signal.signal(signal.SIGINT, signal.default_int_handler)
-        self._sigint = True
-        self.kill()
 
 
 def run_agent(name='', nsaddr=None, addr=None, base=Agent, serializer=None,
