@@ -1,4 +1,5 @@
 import sys
+import os
 import pytest
 from pytest import mark
 
@@ -44,3 +45,10 @@ def agent_logger(request):
     sync_agent_logger(agent=agent, logger=logger)
     yield agent, logger
     ns.shutdown()
+
+
+def is_pid_alive(pid):
+    """
+    Check if a given PID corresponds to a currently active process.
+    """
+    return str(pid) in os.listdir('/proc')

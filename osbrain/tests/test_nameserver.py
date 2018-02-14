@@ -5,9 +5,11 @@ import os
 import time
 import random
 import multiprocessing
+import signal
 from threading import Timer
 
 import pytest
+import Pyro4
 
 from osbrain import SocketAddress
 from osbrain import run_agent
@@ -24,6 +26,7 @@ from osbrain.nameserver import random_nameserver_process
 from common import nsproxy  # noqa: F401
 from common import skip_windows_any_port
 from common import skip_windows_port_reuse
+from common import is_pid_alive  # pragma: no flakes
 
 
 def test_nameserver_ping(nsproxy):
@@ -246,6 +249,83 @@ def test_nameserverprocess_shutdown_lazy_agents():
     t0 = time.time()
     nsprocess.shutdown()
     assert time.time() - t0 > 1
+
+
+def test_nameserver_sigint_shutdown():
+    """
+    When the name server is stopped using ^C, it should perform a clean
+    shutdown and stop all its agents.
+    """
+    class NewNameServer(NameServer):
+        def simulate_sigint(self):
+            os.kill(os.getpid(), signal.SIGINT)
+
+        def get_pid(self):
+            return os.getpid()
+
+    class NewAgent(Agent):
+        def get_pid(self):
+            return os.getpid()
+
+    Pyro4.naming.NameServer = NewNameServer
+
+    ns = run_nameserver()
+    ns_pid = ns.get_pid()
+    agent = run_agent('agent')
+
+    ns.simulate_sigint()
+
+    # Give some time for the agent to be shut down
+    time.sleep(2)
+
+    # Check agent is not alive
+    with pytest.raises(Exception):
+        assert agent.ping() == 'pong'
+
+    # Check the server process is really dead
+    os.wait()
+    assert not is_pid_alive(ns_pid)
+
+
+def test_nameserver_sigint_kill():
+    """
+    If the name server receives a second ^C signal while shutting down, it
+    should abort the clean shutdown and exit immediately.
+    """
+    class NewNameServer(NameServer):
+        def simulate_sigint(self):
+            os.kill(os.getpid(), signal.SIGINT)
+
+    class NewAgent(Agent):
+        def get_pid(self):
+            return os.getpid()
+
+    Pyro4.naming.NameServer = NewNameServer
+
+    ns = run_nameserver()
+    ns_addr = ns.addr()
+
+    # Create many agents so the nameserver does not have time to shut them all
+    # down
+    pids = []
+    for i in range(10):
+        AgentProcess('agent'+str(i), nsaddr=ns_addr, base=NewAgent).start()
+        agent = Proxy('agent'+str(i))
+        agent.run()
+        pids.append(agent.get_pid())
+
+    # Send a second sigint without any time for the agents to shutdown
+    ns.simulate_sigint()
+    ns.simulate_sigint()
+
+    # Check that some of the agents are still alive
+    assert any(is_pid_alive(pid) for pid in pids)
+    for pid in pids:
+        os.kill(pid, signal.SIGTERM)
+
+    # Check the server process is really dead
+    with pytest.raises(Exception):
+        ns.shutdown()
 
 
 def test_nameserver_proxy_timeout():
