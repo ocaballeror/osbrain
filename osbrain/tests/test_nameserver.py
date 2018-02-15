@@ -256,9 +256,6 @@ def test_nameserver_sigint_shutdown():
     shutdown and stop all its agents.
     """
     class NewNameServer(NameServer):
-        def simulate_sigint(self):
-            os.kill(os.getpid(), signal.SIGINT)
-
         def get_pid(self):
             return os.getpid()
 
@@ -270,7 +267,7 @@ def test_nameserver_sigint_shutdown():
     ns_pid = ns.get_pid()
     agent = run_agent('agent')
 
-    ns.simulate_sigint()
+    os.kill(ns_pid, signal.SIGINT)
 
     # Give some time for the agent to be shut down
     time.sleep(2)
@@ -279,8 +276,7 @@ def test_nameserver_sigint_shutdown():
     with pytest.raises(Exception):
         assert agent.ping() == 'pong'
 
-    # Check the server process is really dead
-    os.wait()
+    # Check the server process is dead
     assert not is_pid_alive(ns_pid)
 
 
@@ -290,8 +286,8 @@ def test_nameserver_sigint_kill():
     should abort the clean shutdown and exit immediately.
     """
     class NewNameServer(NameServer):
-        def simulate_sigint(self):
-            os.kill(os.getpid(), signal.SIGINT)
+        def get_pid(self):
+            return os.getpid()
 
     class NewAgent(Agent):
         def get_pid(self):
@@ -299,6 +295,7 @@ def test_nameserver_sigint_kill():
 
     ns = run_nameserver(base=NewNameServer)
     ns_addr = ns.addr()
+    ns_pid = ns.get_pid()
 
     # Create many agents so the nameserver does not have time to shut them all
     # down
@@ -310,8 +307,8 @@ def test_nameserver_sigint_kill():
         pids.append(agent.get_pid())
 
     # Send a second sigint without any time for the agents to shutdown
-    ns.simulate_sigint()
-    ns.simulate_sigint()
+    os.kill(ns_pid, signal.SIGINT)
+    os.kill(ns_pid, signal.SIGINT)
 
     # Check that some of the agents are still alive
     assert any(is_pid_alive(pid) for pid in pids)
@@ -319,8 +316,7 @@ def test_nameserver_sigint_kill():
         os.kill(pid, signal.SIGTERM)
 
     # Check the server process is really dead
-    with pytest.raises(Exception):
-        ns.shutdown()
+    assert not is_pid_alive(ns_pid)
 
 
 def test_nameserver_proxy_timeout():

@@ -1,5 +1,5 @@
 import sys
-import os
+import psutil
 import pytest
 from pytest import mark
 
@@ -51,4 +51,4 @@ def is_pid_alive(pid):
     """
     Check if a given PID corresponds to a currently active process.
     """
-    return str(pid) in os.listdir('/proc')
+    return psutil.Process(pid) != psutil.STATUS_RUNNING

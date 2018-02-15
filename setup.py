@@ -66,6 +66,7 @@ setup(
             'pytest-cov',
             'pytest-rerunfailures',
             'pytest-xdist',
+            'psutil',
         ],
     },
 )
