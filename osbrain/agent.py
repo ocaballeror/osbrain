@@ -15,7 +15,6 @@ from typing import Any
 from typing import Dict
 from typing import Union
 
-import signal
 import cloudpickle
 import dill
 import Pyro4
@@ -1813,9 +1812,6 @@ class AgentProcess(multiprocessing.Process):
         """
         Begin execution of the agent process and start the main loop.
         """
-        # Capture SIGINT
-        signal.signal(signal.SIGINT, self._sigint_handler)
-
         try:
             ns = NSProxy(self.nsaddr)
             self._daemon = Pyro4.Daemon(self._host, self.port)

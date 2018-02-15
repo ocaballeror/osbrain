@@ -73,9 +73,6 @@ class NameServer(Pyro4.naming.NameServer):
         self._pyroDaemon.shutdown()
 
 
-Pyro4.naming.NameServer = NameServer
-
-
 class NameServerProcess(multiprocessing.Process):
     """
     Name server class. Instances of a name server are system processes which
@@ -117,6 +114,9 @@ class NameServerProcess(multiprocessing.Process):
         hostip = self._daemon.sock.getsockname()[0]
         # Start broadcast responder
         bcserver = BroadcastServer(internal_uri)
+        sys.stdout.write(
+                "Broadcast server running on %s\n" % bcserver.locationStr)
+        sys.stdout.flush()
         bcserver.runInThread()
         sys.stdout.write(
             "NS running on %s (%s)\n" % (self._daemon.locationStr, hostip))
@@ -162,9 +162,8 @@ class NameServerProcess(multiprocessing.Process):
         Shutdown all agents registered in the name server.
         """
         for agent in self.agents():
-            proxy = Proxy(agent, self.addr)
-            proxy.unsafe.after(0, 'shutdown')
-            proxy.release()
+            with Proxy(agent, self.addr) as agent:
+                agent.unsafe.after(0, 'shutdown')
 
     def shutdown(self):
         """
@@ -180,7 +179,7 @@ class NameServerProcess(multiprocessing.Process):
             self.terminate()
             self.join()
         else:
-            self.daemon.shutdown()
+            self._daemon.shutdown()
 
     def _sigint_handler(self, _signal, _frame):
         signal.signal(signal.SIGINT, signal.default_int_handler)
