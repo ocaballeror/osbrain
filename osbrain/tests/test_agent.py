@@ -4,6 +4,7 @@ Test file for agents.
 import os
 import multiprocessing
 import random
+import signal
 import time
 from uuid import uuid4
 from threading import Timer
@@ -27,6 +28,7 @@ from osbrain.helper import wait_agent_attr
 from common import nsproxy  # noqa: F401
 from common import append_received
 from common import set_received
+from common import is_pid_alive
 
 from common import skip_windows_spawn
 from common import skip_windows_any_port
@@ -137,6 +139,26 @@ def test_agent_shutdown(nsproxy):
     a0.shutdown()
     agent.join()
     assert 'a0' not in nsproxy.list()
+
+
+def test_sigint_agent_kill(nsproxy):
+    """
+    Test SIGINT signal on an agent.
+
+    A single signal is sent: we want the agent to shut down gracefully.
+    Two seconds are given to give enough time to free the resources.
+    """
+    class NewAgent(Agent):
+        def get_pid(self):
+            return os.getpid()
+
+    # Test SIGINT on an Agent based on the new class
+    agent = run_agent('agent', base=NewAgent)
+    agent_pid = agent.get_pid()
+
+    os.kill(agent_pid, signal.SIGINT)
+    time.sleep(2)
+    assert not is_pid_alive(agent_pid)
 
 
 def test_run_agent_initial_attributes(nsproxy):

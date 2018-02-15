@@ -162,8 +162,12 @@ class NameServerProcess(multiprocessing.Process):
         Shutdown all agents registered in the name server.
         """
         for agent in self.agents():
-            with Proxy(agent, self.addr) as agent:
-                agent.after(0, 'shutdown')
+            try:
+                with Proxy(agent, self.addr) as agent:
+                    agent.after(0, 'shutdown')
+            except PyroError:
+                # In case the agent was force killed and did not unregister
+                pass
 
     def shutdown(self):
         """

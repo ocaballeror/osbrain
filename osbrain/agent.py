@@ -8,6 +8,7 @@ import multiprocessing
 import os
 import pickle
 import json
+import signal
 import sys
 import time
 import types
@@ -1812,6 +1813,9 @@ class AgentProcess(multiprocessing.Process):
         """
         Begin execution of the agent process and start the main loop.
         """
+        # Capture SIGINT
+        signal.signal(signal.SIGINT, self._sigint_handler)
+
         try:
             ns = NSProxy(self.nsaddr)
             self._daemon = Pyro4.Daemon(self._host, self.port)
@@ -1838,7 +1842,6 @@ class AgentProcess(multiprocessing.Process):
 
         self._daemon.requestLoop(lambda: not self._shutdown_event.is_set())
         self._daemon.unregister(self.agent)
-
         self._teardown()
 
     def _remove_from_nameserver(self):
@@ -1859,9 +1862,7 @@ class AgentProcess(multiprocessing.Process):
         """
         Remove self from the name server address book, close daemon and die.
         """
-        if not self._sigint:
-            # Clean teardown
-            self._remove_from_nameserver()
+        self._remove_from_nameserver()
 
         self.agent._killed = True
         self._daemon.close()
@@ -1890,6 +1891,14 @@ class AgentProcess(multiprocessing.Process):
         self._shutdown_event.set()
         if self._daemon:
             self._daemon.shutdown()
+
+    def _sigint_handler(self, _signal, _frame):
+        """
+        Handle interruption signals.
+        """
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        self._sigint = True
+        self.kill()
 
 
 def run_agent(name='', nsaddr=None, addr=None, base=Agent, serializer=None,
