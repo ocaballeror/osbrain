@@ -115,7 +115,7 @@ class NameServerProcess(multiprocessing.Process):
         # Start broadcast responder
         bcserver = BroadcastServer(internal_uri)
         sys.stdout.write(
-                "Broadcast server running on %s\n" % bcserver.locationStr)
+            "Broadcast server running on %s\n" % bcserver.locationStr)
         sys.stdout.flush()
         bcserver.runInThread()
         sys.stdout.write(
@@ -163,7 +163,7 @@ class NameServerProcess(multiprocessing.Process):
         """
         for agent in self.agents():
             with Proxy(agent, self.addr) as agent:
-                agent.unsafe.after(0, 'shutdown')
+                agent.after(0, 'shutdown')
 
     def shutdown(self):
         """
