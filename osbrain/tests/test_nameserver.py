@@ -9,7 +9,6 @@ import signal
 from threading import Timer
 
 import pytest
-import Pyro4
 
 from osbrain import Agent
 from osbrain import AgentProcess
@@ -267,9 +266,7 @@ def test_nameserver_sigint_shutdown():
         def get_pid(self):
             return os.getpid()
 
-    Pyro4.naming.NameServer = NewNameServer
-
-    ns = run_nameserver()
+    ns = run_nameserver(base=NewNameServer)
     ns_pid = ns.get_pid()
     agent = run_agent('agent')
 
@@ -300,9 +297,7 @@ def test_nameserver_sigint_kill():
         def get_pid(self):
             return os.getpid()
 
-    Pyro4.naming.NameServer = NewNameServer
-
-    ns = run_nameserver()
+    ns = run_nameserver(base=NewNameServer)
     ns_addr = ns.addr()
 
     # Create many agents so the nameserver does not have time to shut them all
