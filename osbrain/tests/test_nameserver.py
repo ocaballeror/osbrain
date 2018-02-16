@@ -265,18 +265,16 @@ def test_nameserver_sigint_shutdown():
 
     ns = run_nameserver(base=NewNameServer)
     ns_pid = ns.get_pid()
-    agent = run_agent('agent')
+    agent = run_agent('agent', base=NewAgent)
+    agent_pid = agent.get_pid()
 
     os.kill(ns_pid, signal.SIGINT)
 
     # Give some time for the agent to be shut down
     time.sleep(2)
 
-    # Check agent is not alive
-    with pytest.raises(Exception):
-        assert agent.ping() == 'pong'
-
-    # Check the server process is dead
+    # Check that both the agent and the nameserver are not alive
+    assert not is_pid_alive(agent_pid)
     assert not is_pid_alive(ns_pid)
 
 
@@ -294,20 +292,18 @@ def test_nameserver_sigint_kill():
             return os.getpid()
 
     ns = run_nameserver(base=NewNameServer)
-    ns_addr = ns.addr()
     ns_pid = ns.get_pid()
 
     # Create many agents so the nameserver does not have time to shut them all
     # down
     pids = []
-    for i in range(10):
-        AgentProcess('agent'+str(i), nsaddr=ns_addr, base=NewAgent).start()
-        agent = Proxy('agent'+str(i))
-        agent.run()
+    for i in range(15):
+        agent = run_agent('agent'+str(i), base=NewAgent)
         pids.append(agent.get_pid())
 
     # Send a second sigint without any time for the agents to shutdown
     os.kill(ns_pid, signal.SIGINT)
+    time.sleep(.01)
     os.kill(ns_pid, signal.SIGINT)
 
     # Check that some of the agents are still alive
@@ -315,7 +311,8 @@ def test_nameserver_sigint_kill():
     for pid in pids:
         os.kill(pid, signal.SIGTERM)
 
-    # Check the server process is really dead
+    # Wait for the name server process to be dead
+    time.sleep(2)
     assert not is_pid_alive(ns_pid)
 
 

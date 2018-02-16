@@ -1,6 +1,8 @@
 import sys
 import psutil
 import pytest
+
+from psutil import STATUS_DEAD, STATUS_ZOMBIE
 from pytest import mark
 
 from osbrain import run_agent
@@ -51,4 +53,10 @@ def is_pid_alive(pid):
     """
     Check if a given PID corresponds to a currently active process.
     """
-    return psutil.Process(pid) != psutil.STATUS_RUNNING
+    dead_statuses = [STATUS_ZOMBIE, STATUS_DEAD]
+    try:
+        process = psutil.Process(pid)
+        print('%d is %s', pid, process.status())
+        return process.status() not in dead_statuses
+    except psutil.NoSuchProcess:
+        return False
