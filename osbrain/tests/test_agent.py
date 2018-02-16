@@ -141,7 +141,7 @@ def test_agent_shutdown(nsproxy):
     assert 'a0' not in nsproxy.list()
 
 
-def test_sigint_agent_kill(nsproxy):
+def test_agent_sigint_kill(nsproxy):
     """
     Test SIGINT signal on an agent.
 
@@ -157,7 +157,7 @@ def test_sigint_agent_kill(nsproxy):
     agent_pid = agent.get_pid()
 
     os.kill(agent_pid, signal.SIGINT)
-    time.sleep(2)
+    os.wait()
     assert not is_pid_alive(agent_pid)
 
 
