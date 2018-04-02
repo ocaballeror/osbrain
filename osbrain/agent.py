@@ -5,6 +5,8 @@ from datetime import datetime
 import errno
 import inspect
 import multiprocessing
+import threading
+import queue
 import os
 import pickle
 import json
@@ -1785,7 +1787,7 @@ class Agent():
         return 'pong'
 
 
-class AgentProcess(multiprocessing.Process):
+class AgentX():
     """
     Agent class. Instances of an Agent are system processes which
     can be run independently.
@@ -1802,18 +1804,16 @@ class AgentProcess(multiprocessing.Process):
         self._serializer = serializer
         self._transport = transport
         self.base = cloudpickle.dumps(base)
-        self._shutdown_event = multiprocessing.Event()
-        self._queue = multiprocessing.Queue()
         self._sigint = False
         self.attributes = attributes
+
+        self._shutdown_event = None  # Should be overridden by children classes
+        self._queue = None  # Should be overridden by children classes
 
     def run(self):
         """
         Begin execution of the agent process and start the main loop.
         """
-        # Capture SIGINT
-        signal.signal(signal.SIGINT, self._sigint_handler)
-
         try:
             ns = NSProxy(self.nsaddr)
             self._daemon = Pyro4.Daemon(self._host, self.port)
@@ -1893,12 +1893,35 @@ class AgentProcess(multiprocessing.Process):
         if self._daemon:
             self._daemon.shutdown()
 
-    def _sigint_handler(self, signal, frame):
+
+class AgentProcess(AgentX, multiprocessing.Process):
+    def __init__(self, name='', nsaddr=None, addr=None, serializer=None,
+                 transport=None, base=Agent, attributes=None):
+        super().__init__(name, nsaddr, addr, serializer, transport, base,
+                         attributes)
+        self._shutdown_event = multiprocessing.Event()
+        self._queue = multiprocessing.Queue()
+
+    def run(self):
+        # Capture SIGINT
+        signal.signal(signal.SIGINT, self._sigint_handler)
+        super().run()
+
+    def _sigint_handler(self, *_):
         """
         Handle interruption signals.
         """
         self._sigint = True
         self.kill()
+
+
+class AgentThread(AgentX, threading.Thread):
+    def __init__(self, name='', nsaddr=None, addr=None, serializer=None,
+                 transport=None, base=Agent, attributes=None):
+        super().__init__(name, nsaddr, addr, serializer, transport, base,
+                         attributes)
+        self._shutdown_event = threading.Event()
+        self._queue = queue.Queue()
 
 
 def run_agent(name='', nsaddr=None, addr=None, base=Agent, serializer=None,
@@ -1931,9 +1954,9 @@ def run_agent(name='', nsaddr=None, addr=None, base=Agent, serializer=None,
     """
     if not nsaddr:
         nsaddr = os.environ.get('OSBRAIN_NAMESERVER_ADDRESS')
-    agent = AgentProcess(name=name, nsaddr=nsaddr, addr=addr, base=base,
-                         serializer=serializer, transport=transport,
-                         attributes=attributes)
+    agent = AgentThread(name=name, nsaddr=nsaddr, addr=addr, base=base,
+                        serializer=serializer, transport=transport,
+                        attributes=attributes)
     agent_name = agent.start()
 
     proxy = Proxy(agent_name, nsaddr, safe=safe)
