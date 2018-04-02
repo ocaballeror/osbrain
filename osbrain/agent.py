@@ -1580,7 +1580,14 @@ class Agent():
         self._pending_requests[request_uuid] = handler
         message = (address_uuid, request_uuid, message)
         self._send_address(channel.sender, message)
-        self._wait_received(wait, uuid=request_uuid, on_error=on_error)
+        for _ in range(5):
+            self._wait_received(wait, uuid=request_uuid, on_error=None)
+            if self._check_received(request_uuid, wait, None):
+                break
+            self._send_address(channel.sender, message)
+        else:
+            on_error(self)
+
         return
 
     def _check_received(self, uuid, wait, on_error):
@@ -1598,15 +1605,15 @@ class Agent():
             request in time. If not provided, it will simply log a warning.
         """
         if uuid not in self._pending_requests:
-            return
+            return True
 
         del self._pending_requests[uuid]
         if not on_error:
             warning = 'Did not receive request {} after {} seconds'.format(
                 uuid, wait)
             self.log_warning(warning)
-            return
         on_error(self)
+        return False
 
     def _wait_received(self, wait, uuid, on_error):
         """
