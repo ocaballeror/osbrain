@@ -1,8 +1,9 @@
 import sys
-import psutil
-import pytest
 
+import psutil
 from psutil import STATUS_DEAD, STATUS_ZOMBIE
+
+import pytest
 from pytest import mark
 
 from osbrain import run_agent
@@ -56,7 +57,6 @@ def is_pid_alive(pid):
     dead_statuses = [STATUS_ZOMBIE, STATUS_DEAD]
     try:
         process = psutil.Process(pid)
-        print('%d is %s', pid, process.status())
         return process.status() not in dead_statuses
     except psutil.NoSuchProcess:
         return False
