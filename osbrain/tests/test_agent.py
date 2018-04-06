@@ -28,7 +28,6 @@ from common import nsproxy  # noqa: F401
 from common import append_received
 from common import set_received
 
-from common import skip_windows_spawn
 from common import skip_windows_any_port
 from common import skip_windows_port_reuse
 
@@ -270,7 +269,6 @@ def test_bind_tcp_addr_specific_port(nsproxy):
     assert address.address.port == port
 
 
-@skip_windows_spawn
 @pytest.mark.parametrize('linger, sleep_time, should_receive', [
     (2, 1, True),
     (0.5, 1, False),

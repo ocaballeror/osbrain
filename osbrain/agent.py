@@ -233,7 +233,7 @@ class Agent():
         Stores all the current active timers, using their aliases as keys.
     """
     def __init__(self, name='', host=None, serializer=None, transport=None,
-                 attributes=None):
+                 configuration=None, attributes=None):
         self._uuid = unique_identifier()
         self.name = name
         if not self.name:
@@ -256,6 +256,10 @@ class Agent():
         self._die_now = False
         self._running = False
         self._DEBUG = False
+
+        if configuration is not None:
+            global config
+            config = configuration
 
         self._context = zmq.Context()
         self._poller = zmq.Poller()
@@ -1835,7 +1839,8 @@ class AgentProcess(multiprocessing.Process):
     can be run independently.
     """
     def __init__(self, name='', nsaddr=None, addr=None, serializer=None,
-                 transport=None, base=Agent, attributes=None):
+                 transport=None, base=Agent, configuration=None,
+                 attributes=None):
         super().__init__()
         self.name = name
         self._daemon = None
@@ -1850,6 +1855,7 @@ class AgentProcess(multiprocessing.Process):
         self._queue = multiprocessing.Queue()
         self._sigint = False
         self.attributes = attributes
+        self._config = configuration
 
     def run(self):
         """
@@ -1865,6 +1871,7 @@ class AgentProcess(multiprocessing.Process):
             self.agent = self.base(name=self.name, host=self._host,
                                    serializer=self._serializer,
                                    transport=self._transport,
+                                   configuration=self._config,
                                    attributes=self.attributes)
         except Exception:
             self._queue.put(format_exception())
@@ -1977,7 +1984,7 @@ def run_agent(name='', nsaddr=None, addr=None, base=Agent, serializer=None,
         nsaddr = os.environ.get('OSBRAIN_NAMESERVER_ADDRESS')
     agent = AgentProcess(name=name, nsaddr=nsaddr, addr=addr, base=base,
                          serializer=serializer, transport=transport,
-                         attributes=attributes)
+                         configuration=config, attributes=attributes)
     agent_name = agent.start()
 
     proxy = Proxy(agent_name, nsaddr, safe=safe)

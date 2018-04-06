@@ -14,8 +14,6 @@ skip_windows_port_reuse = mark.skipif(sys.platform == 'win32',
 skip_windows_any_port = mark.skipif(sys.platform == 'win32',
                                     reason='Windows allows binding to well '
                                     'known ports')
-skip_windows_spawn = mark.skipif(sys.platform == 'win32',
-                                 reason='Windows does not support fork')
 skip_windows_ipc = mark.skipif(sys.platform == 'win32',
                                reason='Windows does not support IPC')
 

@@ -15,7 +15,6 @@ from osbrain.helper import wait_agent_attr
 
 from common import nsproxy  # noqa: F401
 from common import append_received
-from common import skip_windows_spawn
 from common import skip_windows_ipc
 
 
@@ -31,7 +30,6 @@ def test_agent_bind_transport_platform_default(nsproxy):
         assert address.transport == 'tcp'
 
 
-@skip_windows_spawn
 def test_agent_bind_transport_global(monkeypatch, nsproxy):
     """
     Test global default transport change.
