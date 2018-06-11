@@ -1,6 +1,7 @@
 """
 Test file for agents.
 """
+import sys
 import os
 import multiprocessing
 import random
@@ -159,6 +160,17 @@ def test_agent_sigint_kill(nsproxy):
     os.kill(agent_pid, signal.SIGINT)
     os.wait()
     assert not is_pid_alive(agent_pid)
+
+
+def test_agent_exit_kill(nsproxy):
+    """
+    Check that the agent is killed when the system exits, either after a
+    `sys.exit()` call or after the user sends an EOF to the python interpreter.
+    """
+    run_agent('agent')
+    with pytest.raises(SystemExit):
+        sys.exit()
+        assert agent_dies('agent', nsproxy)
 
 
 def test_run_agent_initial_attributes(nsproxy):
