@@ -7,6 +7,7 @@ import time
 import random
 import multiprocessing
 import cloudpickle
+import atexit
 import signal
 from threading import Timer
 
@@ -243,7 +244,10 @@ def run_nameserver(addr=None, base=NameServer):
         A proxy to the name server.
     """
     if not addr:
-        addr = random_nameserver_process(base=base).addr
+        nsprocess = random_nameserver_process(base=base)
+        addr = nsprocess.addr
     else:
-        NameServerProcess(addr, base=base).start()
+        nsprocess = NameServerProcess(addr, base=base)
+        nsprocess.start()
+    atexit.register(nsprocess._sigint_handler, None, None)
     return NSProxy(addr)
