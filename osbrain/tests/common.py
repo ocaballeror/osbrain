@@ -1,4 +1,5 @@
 import sys
+from functools import partial
 
 import psutil
 from psutil import STATUS_DEAD, STATUS_ZOMBIE
@@ -10,6 +11,7 @@ from osbrain import run_agent
 from osbrain import run_logger
 from osbrain import run_nameserver
 from osbrain.helper import sync_agent_logger
+from osbrain.helper import wait_condition
 
 skip_windows = mark.skipif(sys.platform == 'win32',
                            reason='Not supported on windows')
@@ -60,3 +62,11 @@ def is_pid_alive(pid):
         return process.status() not in dead_statuses
     except psutil.NoSuchProcess:
         return False
+
+
+def wait_pid(pid):
+    """
+    Wait for this pid to be dead.
+    """
+    alive = partial(is_pid_alive, pid=pid)
+    return wait_condition(alive, negate=True)

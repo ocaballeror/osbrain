@@ -26,6 +26,7 @@ from common import nsproxy  # noqa: F401
 from common import skip_windows_any_port
 from common import skip_windows_port_reuse
 from common import is_pid_alive  # pragma: no flakes
+from common import wait_pid
 
 
 def test_nameserver_ping(nsproxy):
@@ -270,12 +271,9 @@ def test_nameserver_sigint_shutdown():
 
     os.kill(ns_pid, signal.SIGINT)
 
-    # Give some time for the agent to be shut down
-    time.sleep(2)
-
     # Check that both the agent and the nameserver are not alive
-    assert not is_pid_alive(agent_pid)
-    assert not is_pid_alive(ns_pid)
+    assert wait_pid(agent_pid)
+    assert wait_pid(ns_pid)
 
 
 def test_nameserver_sigint_kill():
@@ -312,8 +310,7 @@ def test_nameserver_sigint_kill():
         os.kill(pid, signal.SIGTERM)
 
     # Wait for the name server process to be dead
-    time.sleep(2)
-    assert not is_pid_alive(ns_pid)
+    assert wait_pid(ns_pid)
 
 
 def test_nameserver_proxy_timeout():
