@@ -27,6 +27,9 @@ skip_windows_spawn = mark.skipif(
 skip_windows_ipc = mark.skipif(
     sys.platform == 'win32', reason='Windows does not support IPC'
 )
+skip_windows_sigint = mark.skipif(
+    sys.platform == 'win32', reason='Windows does not support sending SIGINT'
+)
 
 
 def append_received(agent, message, topic=None):

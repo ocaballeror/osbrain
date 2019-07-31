@@ -32,6 +32,7 @@ from .common import nsproxy  # noqa: F401
 from .common import set_received
 from .common import skip_windows_any_port
 from .common import skip_windows_port_reuse
+from .common import skip_windows_sigint
 from .common import skip_windows_spawn
 
 
@@ -142,6 +143,7 @@ def test_agent_shutdown(nsproxy):
     assert 'a0' not in nsproxy.list()
 
 
+@skip_windows_sigint
 def test_agent_sigint_kill(nsproxy):
     """
     Test SIGINT signal on an agent.

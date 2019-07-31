@@ -28,6 +28,7 @@ from .common import is_pid_alive  # pragma: no flakes
 from .common import nsproxy  # noqa: F401
 from .common import skip_windows_any_port
 from .common import skip_windows_port_reuse
+from .common import skip_windows_sigint
 
 
 def test_nameserver_ping(nsproxy):
@@ -252,6 +253,7 @@ def test_nameserverprocess_shutdown_lazy_agents():
     assert time.time() - t0 > 1
 
 
+@skip_windows_sigint
 def test_nameserver_sigint_shutdown():
     """
     When the name server is stopped using ^C, it should perform a clean
@@ -277,6 +279,7 @@ def test_nameserver_sigint_shutdown():
     assert wait_condition(is_pid_alive, ns_pid, timeout=10)
 
 
+@skip_windows_sigint
 def test_nameserver_sigint_kill():
     """
     If the name server receives a second ^C signal while shutting down, it
