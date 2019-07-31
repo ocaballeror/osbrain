@@ -11,17 +11,22 @@ from osbrain import run_logger
 from osbrain import run_nameserver
 from osbrain.helper import sync_agent_logger
 
-skip_windows = mark.skipif(sys.platform == 'win32',
-                           reason='Not supported on windows')
-skip_windows_port_reuse = mark.skipif(sys.platform == 'win32',
-                                      reason='Windows allows port reuse')
-skip_windows_any_port = mark.skipif(sys.platform == 'win32',
-                                    reason='Windows allows binding to well '
-                                    'known ports')
-skip_windows_spawn = mark.skipif(sys.platform == 'win32',
-                                 reason='Windows does not support fork')
-skip_windows_ipc = mark.skipif(sys.platform == 'win32',
-                               reason='Windows does not support IPC')
+skip_windows = mark.skipif(
+    sys.platform == 'win32', reason='Not supported on windows'
+)
+skip_windows_port_reuse = mark.skipif(
+    sys.platform == 'win32', reason='Windows allows port reuse'
+)
+skip_windows_any_port = mark.skipif(
+    sys.platform == 'win32',
+    reason='Windows allows binding to well known ports',
+)
+skip_windows_spawn = mark.skipif(
+    sys.platform == 'win32', reason='Windows does not support fork'
+)
+skip_windows_ipc = mark.skipif(
+    sys.platform == 'win32', reason='Windows does not support IPC'
+)
 
 
 def append_received(agent, message, topic=None):
