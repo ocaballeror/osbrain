@@ -1,9 +1,9 @@
 import sys
 
 import psutil
-from psutil import STATUS_DEAD, STATUS_ZOMBIE
-
 import pytest
+from psutil import STATUS_DEAD
+from psutil import STATUS_ZOMBIE
 from pytest import mark
 
 from osbrain import run_agent

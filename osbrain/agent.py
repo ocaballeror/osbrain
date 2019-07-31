@@ -8,7 +8,6 @@ import json
 import multiprocessing
 import os
 import pickle
-import json
 import signal
 import sys
 import time

@@ -24,6 +24,7 @@ from osbrain.helper import agent_dies
 from osbrain.helper import logger_received
 from osbrain.helper import sync_agent_logger
 from osbrain.helper import wait_agent_attr
+from osbrain.helper import wait_condition
 
 from .common import append_received
 from .common import is_pid_alive
@@ -157,8 +158,8 @@ def test_agent_sigint_kill(nsproxy):
     agent_pid = agent.get_pid()
 
     os.kill(agent_pid, signal.SIGINT)
-    os.wait()
-    assert not is_pid_alive(agent_pid)
+    assert wait_condition(is_pid_alive, agent_pid, negate=True, timeout=10)
+    assert agent_dies('agent', nsproxy)
 
 
 def test_run_agent_initial_attributes(nsproxy):

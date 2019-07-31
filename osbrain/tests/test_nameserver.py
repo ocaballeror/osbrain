@@ -4,8 +4,8 @@ Test file for nameserver.
 import multiprocessing
 import os
 import random
-import time
 import signal
+import time
 from threading import Timer
 
 import pytest
@@ -18,14 +18,16 @@ from osbrain import Proxy
 from osbrain import SocketAddress
 from osbrain import run_agent
 from osbrain import run_nameserver
+from osbrain.helper import agent_dies
 from osbrain.helper import wait_agent_attr
+from osbrain.helper import wait_condition
 from osbrain.nameserver import NameServerProcess
 from osbrain.nameserver import random_nameserver_process
 
+from .common import is_pid_alive  # pragma: no flakes
 from .common import nsproxy  # noqa: F401
 from .common import skip_windows_any_port
 from .common import skip_windows_port_reuse
-from .common import is_pid_alive  # pragma: no flakes
 
 
 def test_nameserver_ping(nsproxy):
@@ -267,15 +269,12 @@ def test_nameserver_sigint_shutdown():
     ns_pid = ns.get_pid()
     agent = run_agent('agent', base=NewAgent)
     agent_pid = agent.get_pid()
-
     os.kill(ns_pid, signal.SIGINT)
 
-    # Give some time for the agent to be shut down
-    time.sleep(2)
-
     # Check that both the agent and the nameserver are not alive
-    assert not is_pid_alive(agent_pid)
-    assert not is_pid_alive(ns_pid)
+    assert agent_dies('agent', ns)
+    assert wait_condition(is_pid_alive, agent_pid, timeout=10)
+    assert wait_condition(is_pid_alive, ns_pid, timeout=10)
 
 
 def test_nameserver_sigint_kill():
@@ -308,12 +307,13 @@ def test_nameserver_sigint_kill():
 
     # Check that some of the agents are still alive
     assert any(is_pid_alive(pid) for pid in pids)
-    for pid in pids:
-        os.kill(pid, signal.SIGTERM)
 
     # Wait for the name server process to be dead
-    time.sleep(2)
-    assert not is_pid_alive(ns_pid)
+    assert wait_condition(is_pid_alive, ns_pid, negate=True, timeout=10)
+
+    # Check that all the agents where killed during nameserver shutdown
+    assert wait_condition(lambda: any(is_pid_alive(pid) for pid in pids),
+                          negate=True, timeout=10)
 
 
 def test_nameserver_proxy_timeout():

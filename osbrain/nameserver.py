@@ -4,9 +4,9 @@ Implementation of name server.
 import multiprocessing
 import os
 import random
+import signal
 import sys
 import time
-import signal
 from threading import Timer
 
 import cloudpickle
@@ -186,7 +186,8 @@ class NameServerProcess(multiprocessing.Process):
             self._daemon.shutdown()
 
     def _sigint_handler(self, _signal, _frame):
-        signal.signal(signal.SIGINT, signal.default_int_handler)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        sys.stdout.close()
         Timer(0, self.shutdown).start()
 
 
