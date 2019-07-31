@@ -149,7 +149,6 @@ def test_agent_sigint_kill(nsproxy):
     Test SIGINT signal on an agent.
 
     A single signal is sent: we want the agent to shut down gracefully.
-    Two seconds are given to give enough time to free the resources.
     """
     class NewAgent(Agent):
         def get_pid(self):
